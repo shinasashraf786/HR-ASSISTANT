@@ -3,7 +3,7 @@
 
 import os
 import time
-from dotenv import load_dotenv
+#from dotenv import load_dotenv
 from openai import OpenAI
 import streamlit as st
 
@@ -12,7 +12,7 @@ import streamlit as st
 # -------------------------------------------------
 
 # Load environment variables from .env
-load_dotenv()
+#load_dotenv()
 
 # Configure OpenAI client
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
