@@ -27,14 +27,14 @@ st.set_page_config(page_title="HR Shortlister", page_icon="🤖")
 # App Header
 # -------------------------------------------------
 
-st.title("HR Shortlister 🤖")
-st.caption("Chat with your AI assistant to evaluate and shortlist candidates efficiently.")
+st.title("ELEVARE HR 👨‍💻")
+st.caption("Hire smart, not hard — your AI mate for shortlisting")
 
 st.markdown("""
-This assistant connects to **OpenAI’s HR Shortlister** to help you:
-- Review and compare candidate profiles.
-- Generate shortlist recommendations.
-- Draft evaluation feedback and hiring insights.
+With ELEVARE HR, you can:
+- Cut through the pile and find top candidates fast.
+- Build sharp shortlists that hit the mark.
+- Get hiring insights that actually help.
 """)
 
 # -------------------------------------------------
@@ -103,26 +103,4 @@ if prompt := st.chat_input("Ask HR Shortlister anything..."):
             except Exception as e:
                 st.error(f"An error occurred: {e}")
 
-# -------------------------------------------------
-# Sidebar
-# -------------------------------------------------
 
-st.sidebar.header("About HR Shortlister")
-st.sidebar.write("""
-**HR Shortlister** uses OpenAI’s API to support HR teams by:
-- Analysing resumes and candidate experience.
-- Providing shortlist recommendations.
-- Suggesting structured evaluation feedback.
-""")
-
-st.sidebar.divider()
-
-st.sidebar.header("Tips for Better Results")
-st.sidebar.write("""
-- Be clear about the role and context.
-- Provide short candidate summaries if possible.
-- Ask measurable, outcome-based questions.
-""")
-
-st.sidebar.divider()
-st.sidebar.caption("Built with ❤️ using Streamlit and OpenAI.")
