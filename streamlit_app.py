@@ -21,21 +21,24 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ---------------- LIGHT MODE CSS ----------------
+# ---------------- LIGHT MODE CSS (SIDEBAR SAFE) ----------------
 
 st.markdown("""
 <style>
-header, footer {
+
+/* DO NOT hide header – needed for sidebar toggle */
+footer {
     visibility: hidden;
     height: 0;
 }
+
 .block-container {
     padding: 0 !important;
     margin: 0 !important;
     max-width: 100% !important;
 }
 
-/* Sidebar tidy */
+/* Sidebar */
 [data-testid="stSidebar"] {
     background-color: #f9fafb !important;
     border-right: 1px solid #e5e7eb !important;
@@ -44,7 +47,7 @@ header, footer {
     color: #111827 !important;
 }
 
-/* Input styles */
+/* Inputs */
 input, textarea, select {
     background-color: #ffffff !important;
     color: #111827 !important;
@@ -63,12 +66,12 @@ button:hover {
     color: #3b82f6 !important;
 }
 
-/* Chat messages no box */
+/* Chat messages */
 [data-testid="stChatMessage"] {
     background: transparent !important;
 }
 
-/* Chat input box */
+/* Chat input */
 [data-testid="stChatInput"] {
     position: sticky;
     bottom: 0;
@@ -77,12 +80,13 @@ button:hover {
     padding-bottom: 8px;
 }
 
-/* Chat action buttons (keep icons, remove box) */
+/* Remove box from ❌ ⬇️ but keep icons */
 [data-testid="stChatMessageActions"] {
     background: transparent !important;
-    box-shadow: none !important;
     border: none !important;
+    box-shadow: none !important;
 }
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -113,7 +117,7 @@ def export_chat_to_pdf(cid, convo):
     doc.build(content)
     return filename
 
-# ---------------- STATE INIT ----------------
+# ---------------- STATE ----------------
 
 if "conversations" not in st.session_state:
     st.session_state["conversations"] = load_conversations()
@@ -162,7 +166,7 @@ with st.sidebar:
     for cid, convo in st.session_state["conversations"].items():
         if convo.get("folder") == selected_folder and chat_search.lower() in convo["title"].lower():
             col1, col2, col3 = st.columns([6, 1, 1])
-            if col1.button(convo["title"], key=cid):
+            if col1.button(convo["title"], key=f"open_{cid}"):
                 st.session_state["active_convo"] = cid
                 st.rerun()
             if col2.button("❌", key=f"del_{cid}"):
@@ -173,14 +177,12 @@ with st.sidebar:
                 save_conversations(st.session_state["conversations"])
                 st.rerun()
             with open(export_chat_to_pdf(cid, convo), "rb") as f:
-                if col3.download_button("⬇️", data=f, file_name=f"{convo['title']}.pdf", mime="application/pdf", key=f"pdf_{cid}"):
-                    pass
+                col3.download_button("⬇️", data=f, file_name=f"{convo['title']}.pdf",
+                                     mime="application/pdf", key=f"pdf_{cid}")
 
     if st.button("🗑️ Delete Folder"):
-        to_delete = [
-            cid for cid, c in st.session_state["conversations"].items()
-            if c.get("folder") == selected_folder
-        ]
+        to_delete = [cid for cid, c in st.session_state["conversations"].items()
+                     if c.get("folder") == selected_folder]
         for cid in to_delete:
             st.session_state["conversations"].pop(cid, None)
             st.session_state["threads"].pop(cid, None)
@@ -188,7 +190,7 @@ with st.sidebar:
         save_conversations(st.session_state["conversations"])
         st.rerun()
 
-# ---------------- MAIN AREA ----------------
+# ---------------- MAIN ----------------
 
 if st.session_state["active_convo"] is None:
     st.markdown("""
