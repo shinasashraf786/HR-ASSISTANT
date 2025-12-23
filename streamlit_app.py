@@ -1,5 +1,5 @@
 # Copyright 2025
-# Elevare HR – Streamlit Application
+# HR Shortlister Streamlit Chat Application
 
 import os
 import time
@@ -7,110 +7,120 @@ from openai import OpenAI
 import streamlit as st
 
 # -------------------------------------------------
-# Environment Setup
+# Config
 # -------------------------------------------------
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
 ASSISTANT_ID = "asst_bBLvW1TIJ2lBYTjCYlfftrhu"
 
 st.set_page_config(
-    page_title="Elevare HR",
+    page_title="ELEVARE HR",
     layout="wide",
 )
 
 # -------------------------------------------------
-# Global Styling (Dark Enterprise UI)
+# GLOBAL CSS – MATCH INNOVA UI
 # -------------------------------------------------
 
-st.markdown(
-    """
-    <style>
-    body {
-        background-color: #0e1117;
-    }
-    .block-container {
-        padding-top: 2rem;
-    }
-    h1, h2, h3, p {
-        color: #ffffff;
-    }
-    .stTextInput input {
-        background-color: #1c1f26;
-        color: #ffffff;
-    }
-    .stButton button {
-        background-color: #1c1f26;
-        color: white;
-        border-radius: 6px;
-        border: 1px solid #2e3440;
-    }
-    .stButton button:hover {
-        border-color: #4c8bf5;
-        color: #4c8bf5;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+st.markdown("""
+<style>
+
+/* Remove Streamlit padding */
+.block-container {
+    padding: 0 !important;
+    max-width: 100% !important;
+}
+
+/* App background */
+[data-testid="stAppViewContainer"] {
+    background: radial-gradient(circle at top, #0f172a 0%, #020617 70%);
+}
+
+/* Sidebar */
+[data-testid="stSidebar"] {
+    background: #020617;
+    border-right: 1px solid #0f172a;
+}
+
+/* Sidebar text */
+[data-testid="stSidebar"] h1,
+[data-testid="stSidebar"] h2,
+[data-testid="stSidebar"] p,
+[data-testid="stSidebar"] label {
+    color: #e5e7eb;
+}
+
+/* Inputs */
+input, textarea {
+    background-color: #020617 !important;
+    color: #e5e7eb !important;
+    border: 1px solid #1e293b !important;
+}
+
+/* Buttons */
+button {
+    background-color: #020617 !important;
+    color: #e5e7eb !important;
+    border: 1px solid #1e293b !important;
+    border-radius: 6px !important;
+}
+button:hover {
+    border-color: #6366f1 !important;
+    color: #6366f1 !important;
+}
+
+/* Chat bubbles */
+[data-testid="stChatMessage"] {
+    background: transparent !important;
+}
+
+/* Chat input bar */
+[data-testid="stChatInput"] {
+    position: fixed;
+    bottom: 24px;
+    left: 22%;
+    width: 56%;
+    background: transparent;
+}
+
+</style>
+""", unsafe_allow_html=True)
 
 # -------------------------------------------------
-# Sidebar – Folders & Chats
+# SIDEBAR (same structure as INNOVA)
 # -------------------------------------------------
 
 with st.sidebar:
     st.markdown("### Folders")
-
-    folder_search = st.text_input("Search folders")
-
-    selected_folder = st.selectbox(
-        "Select folder",
-        options=["+ New Folder"],
-    )
-
-    new_folder_name = st.text_input("Create new folder")
+    st.text_input("", placeholder="Search folders")
+    st.selectbox("", ["+ New Folder"])
 
     st.divider()
 
     st.markdown("### Chats")
+    st.text_input("", placeholder="Search chats")
 
-    chat_search = st.text_input("Search chats")
-
-    if st.button("New Chat"):
-        if "thread_id" in st.session_state:
-            del st.session_state.thread_id
-        st.session_state.messages = []
-
-    if st.button("Delete Folder"):
-        st.warning("Folder deleted")
+    st.button("New Chat")
+    st.button("Delete Folder")
 
 # -------------------------------------------------
-# Main Header (Hero Section)
+# MAIN HERO SECTION (UNCHANGED TEXT)
 # -------------------------------------------------
 
-st.markdown(
-    """
-    <h1> ELEVARE HR </h1>
-    <p style="color:#9aa4b2; font-size:16px;">
-    Hire smart, not hard. Your AI mate for shortlisting.
+st.markdown("""
+<div style="padding:60px 80px 20px 80px;">
+    <h1 style="margin-bottom:8px;">ELEVARE HR 👨‍💻</h1>
+    <p style="color:#9ca3af; margin-bottom:4px;">
+        Hire smart, not hard — your AI mate for shortlisting
     </p>
-    """,
-    unsafe_allow_html=True
-)
-
-st.markdown(
-    """
-    <p style="color:#cfd6e4;">
-    Handle candidate shortlisting in one place, without the clutter.
+    <p style="color:#6b7280;">
+        Handle candidate shortlisting in one place, without the clutter.
     </p>
-    """,
-    unsafe_allow_html=True
-)
-
-st.divider()
+</div>
+""", unsafe_allow_html=True)
 
 # -------------------------------------------------
-# Chat Setup
+# CHAT LOGIC (UNCHANGED)
 # -------------------------------------------------
 
 if "thread_id" not in st.session_state:
@@ -120,19 +130,17 @@ if "thread_id" not in st.session_state:
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Display chat history
+# Display chat
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
 # -------------------------------------------------
-# Chat Input
+# CHAT INPUT
 # -------------------------------------------------
 
 if prompt := st.chat_input("Ask Elevare HR anything..."):
-    st.session_state.messages.append(
-        {"role": "user", "content": prompt}
-    )
+    st.session_state.messages.append({"role": "user", "content": prompt})
 
     with st.chat_message("user"):
         st.markdown(prompt)
@@ -144,33 +152,28 @@ if prompt := st.chat_input("Ask Elevare HR anything..."):
     )
 
     with st.chat_message("assistant"):
-        with st.spinner("Shortlisting in progress..."):
-            try:
-                run = client.beta.threads.runs.create(
+        with st.spinner("HR Shortlister is thinking..."):
+            run = client.beta.threads.runs.create(
+                thread_id=st.session_state.thread_id,
+                assistant_id=ASSISTANT_ID
+            )
+
+            while True:
+                status = client.beta.threads.runs.retrieve(
                     thread_id=st.session_state.thread_id,
-                    assistant_id=ASSISTANT_ID
+                    run_id=run.id
                 )
+                if status.status == "completed":
+                    break
+                time.sleep(1)
 
-                while True:
-                    status = client.beta.threads.runs.retrieve(
-                        thread_id=st.session_state.thread_id,
-                        run_id=run.id
-                    )
-                    if status.status == "completed":
-                        break
-                    time.sleep(1)
+            messages = client.beta.threads.messages.list(
+                thread_id=st.session_state.thread_id
+            )
 
-                messages = client.beta.threads.messages.list(
-                    thread_id=st.session_state.thread_id
-                )
+            reply = messages.data[0].content[0].text.value
+            st.markdown(reply)
 
-                reply = messages.data[0].content[0].text.value
-
-                st.markdown(reply)
-
-                st.session_state.messages.append(
-                    {"role": "assistant", "content": reply}
-                )
-
-            except Exception as e:
-                st.error(f"Error: {e}")
+            st.session_state.messages.append(
+                {"role": "assistant", "content": reply}
+            )
