@@ -1,270 +1,104 @@
+# Copyright 2025
+# HR Shortlister Streamlit Chat Application
+
 import os
-import json
 import time
+#from dotenv import load_dotenv
 from openai import OpenAI
 import streamlit as st
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-from reportlab.lib.styles import getSampleStyleSheet
 
-# ---------------- CONFIG ----------------
+# -------------------------------------------------
+# Environment Setup
+# -------------------------------------------------
 
+# Load environment variables from .env
+#load_dotenv()
+
+# Configure OpenAI client
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+# Your Assistant ID
 ASSISTANT_ID = "asst_bBLvW1TIJ2lBYTjCYlfftrhu"
 
-STORAGE_FILE = "conversations.json"
-EXPORTS_DIR = "exports"
-os.makedirs(EXPORTS_DIR, exist_ok=True)
+# Streamlit Page Config
+st.set_page_config(page_title="HR Shortlister", page_icon="🤖")
 
-st.set_page_config(
-    page_title="ELEVARE HR",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+# -------------------------------------------------
+# App Header
+# -------------------------------------------------
 
-# ---------------- GLOBAL LIGHT MODE CSS ----------------
+st.title("ELEVARE HR 👨‍💻")
+st.caption("Hire smart, not hard — your AI mate for shortlisting")
 
 st.markdown("""
-<style>
-header, footer {
-    visibility: hidden;
-    height: 0;
-}
+With ELEVARE HR, you can:
+- Cut through the pile and find top candidates fast.
+- Build sharp shortlists that hit the mark.
+- Get hiring insights that actually help.
+""")
 
-/* Remove any default layout padding */
-.block-container {
-    padding-top: 1rem !important;
-    padding-left: 2rem !important;
-    padding-right: 2rem !important;
-    max-width: 100% !important;
-}
+# -------------------------------------------------
+# Chat Interface Setup
+# -------------------------------------------------
 
-/* Sidebar adjustments */
-[data-testid="stSidebar"] {
-    background-color: #f8fafc !important;
-    border-right: 1px solid #e2e8f0 !important;
-}
-[data-testid="stSidebar"] * {
-    color: #0f172a !important;
-}
+if "thread_id" not in st.session_state:
+    thread = client.beta.threads.create()
+    st.session_state.thread_id = thread.id
 
-/* Input, textarea, select */
-input, textarea, select {
-    background-color: #ffffff !important;
-    color: #0f172a !important;
-    border: 1px solid #cbd5e1 !important;
-}
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-/* Buttons styling */
-button {
-    background-color: #ffffff !important;
-    color: #0f172a !important;
-    border: 1px solid #cbd5e1 !important;
-    border-radius: 6px !important;
-}
-button:hover {
-    border-color: #3b82f6 !important;
-    color: #3b82f6 !important;
-}
-
-/* Chat messages */
-[data-testid="stChatMessage"] {
-    background: transparent !important;
-}
-
-/* Remove background box around ❌ ⬇️ icons */
-[data-testid="stChatMessageAction"] {
-    background: none !important;
-    border: none !important;
-    box-shadow: none !important;
-}
-
-/* Chat input bar fix */
-[data-testid="stChatInput"] {
-    position: sticky;
-    bottom: 0;
-    background: #f8fafc !important;
-    border-top: 1px solid #e2e8f0 !important;
-    padding-bottom: 10px;
-}
-
-/* Fix overlap for main title */
-h1 {
-    margin-top: 20px !important;
-}
-</style>
-""", unsafe_allow_html=True)
-
-# ---------------- STORAGE HELPERS ----------------
-
-def load_conversations():
-    if os.path.exists(STORAGE_FILE):
-        with open(STORAGE_FILE, "r") as f:
-            return json.load(f)
-    return {}
-
-def save_conversations(data):
-    with open(STORAGE_FILE, "w") as f:
-        json.dump(data, f, indent=2)
-
-def export_chat_to_pdf(cid, convo):
-    filename = os.path.join(EXPORTS_DIR, f"Chat - {convo['title']}.pdf")
-    doc = SimpleDocTemplate(filename)
-    styles = getSampleStyleSheet()
-    content = [
-        Paragraph(f"<b>Conversation:</b> {convo['title']}", styles['Title']),
-        Spacer(1, 12)
-    ]
-    for msg in convo["messages"]:
-        role = "User" if msg["role"] == "user" else "Assistant"
-        content.append(Paragraph(f"<b>{role}:</b> {msg['content']}", styles['BodyText']))
-        content.append(Spacer(1, 8))
-    doc.build(content)
-    return filename
-
-# ---------------- INIT STATE ----------------
-
-if "conversations" not in st.session_state:
-    st.session_state["conversations"] = load_conversations()
-
-if "active_convo" not in st.session_state:
-    st.session_state["active_convo"] = None
-
-if "threads" not in st.session_state:
-    st.session_state["threads"] = {}
-
-# ---------------- SIDEBAR ----------------
-
-def get_folders():
-    return sorted(set(c.get("folder", "Uncategorised")
-                      for c in st.session_state["conversations"].values()))
-
-with st.sidebar:
-    st.header("Folders")
-
-    folder_search = st.text_input("Search folders")
-    folders = [f for f in get_folders() if folder_search.lower() in f.lower()]
-    selected_folder = st.selectbox("Select folder", folders + ["+ New Folder"])
-
-    if selected_folder == "+ New Folder":
-        new_folder = st.text_input("Create new folder")
-        if new_folder:
-            selected_folder = new_folder
-
-    st.divider()
-    st.header("Chats")
-    chat_search = st.text_input("Search chats")
-
-    if st.button("New Conversation"):
-        cid = str(time.time())
-        st.session_state["conversations"][cid] = {
-            "title": "New Conversation",
-            "folder": selected_folder,
-            "messages": []
-        }
-        thread = client.beta.threads.create()
-        st.session_state["threads"][cid] = thread.id
-        st.session_state["active_convo"] = cid
-        save_conversations(st.session_state["conversations"])
-        st.rerun()
-
-    for cid, convo in st.session_state["conversations"].items():
-        if convo.get("folder") == selected_folder and chat_search.lower() in convo["title"].lower():
-            col1, col2, col3 = st.columns([6, 1, 1])
-            if col1.button(convo["title"], key=cid):
-                st.session_state["active_convo"] = cid
-                st.rerun()
-            if col2.button("❌", key=f"del_{cid}"):
-                st.session_state["conversations"].pop(cid, None)
-                st.session_state["threads"].pop(cid, None)
-                if st.session_state["active_convo"] == cid:
-                    st.session_state["active_convo"] = None
-                save_conversations(st.session_state["conversations"])
-                st.rerun()
-            with open(export_chat_to_pdf(cid, convo), "rb") as f:
-                col3.download_button("⬇️", f, file_name=f"{convo['title']}.pdf", mime="application/pdf", key=f"pdf_{cid}")
-
-    if st.button("🗑️ Delete Folder"):
-        to_delete = [
-            cid for cid, c in st.session_state["conversations"].items()
-            if c.get("folder") == selected_folder
-        ]
-        for cid in to_delete:
-            st.session_state["conversations"].pop(cid, None)
-            st.session_state["threads"].pop(cid, None)
-        st.session_state["active_convo"] = None
-        save_conversations(st.session_state["conversations"])
-        st.rerun()
-
-# ---------------- MAIN AREA ----------------
-
-if st.session_state["active_convo"] is None:
-    st.markdown("""
-    <div style="padding:48px 64px;">
-        <h1>ELEVARE HR 👨‍💻</h1>
-        <p style="color:#334155;">Hire smart, not hard — your AI mate for shortlisting</p>
-        <p style="color:#64748b;">Handle candidate shortlisting in one place, without the clutter.</p>
-    </div>
-    """, unsafe_allow_html=True)
-    st.stop()
-
-cid = st.session_state["active_convo"]
-convo = st.session_state["conversations"][cid]
-
-if cid not in st.session_state["threads"]:
-    st.session_state["threads"][cid] = client.beta.threads.create().id
-
-thread_id = st.session_state["threads"][cid]
-
-st.title(convo["title"])
-st.caption(f"Folder: {convo.get('folder')}")
-
-with st.expander("⚙️ Chat Settings"):
-    new_title = st.text_input("Rename chat", convo["title"])
-    new_folder = st.text_input("Move to folder", convo.get("folder"))
-    if st.button("Update"):
-        convo["title"] = new_title or convo["title"]
-        convo["folder"] = new_folder or convo["folder"]
-        save_conversations(st.session_state["conversations"])
-        st.rerun()
-
-# Chat messages
-for msg in convo["messages"]:
+# Display prior messages
+for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-# Chat input
-if prompt := st.chat_input("Ask Elevare HR anything..."):
-    convo["messages"].append({"role": "user", "content": prompt})
-    save_conversations(st.session_state["conversations"])
+# -------------------------------------------------
+# User Input
+# -------------------------------------------------
 
+if prompt := st.chat_input("Ask HR Shortlister anything..."):
+    # Display user message
+    st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
+    # Add user message to thread
     client.beta.threads.messages.create(
-        thread_id=thread_id,
+        thread_id=st.session_state.thread_id,
         role="user",
         content=prompt
     )
 
+    # Run the assistant
     with st.chat_message("assistant"):
         with st.spinner("HR Shortlister is thinking..."):
-            run = client.beta.threads.runs.create(
-                thread_id=thread_id,
-                assistant_id=ASSISTANT_ID
-            )
-            while True:
-                status = client.beta.threads.runs.retrieve(
-                    thread_id=thread_id,
-                    run_id=run.id
+            try:
+                run = client.beta.threads.runs.create(
+                    thread_id=st.session_state.thread_id,
+                    assistant_id=ASSISTANT_ID
                 )
-                if status.status == "completed":
-                    break
-                time.sleep(1)
 
-            reply = client.beta.threads.messages.list(
-                thread_id=thread_id
-            ).data[0].content[0].text.value
+                # Poll until run completes
+                while True:
+                    status = client.beta.threads.runs.retrieve(
+                        thread_id=st.session_state.thread_id,
+                        run_id=run.id
+                    )
+                    if status.status == "completed":
+                        break
+                    time.sleep(1)
 
-            st.markdown(reply)
-            convo["messages"].append({"role": "assistant", "content": reply})
-            save_conversations(st.session_state["conversations"])
+                # Get assistant reply
+                messages = client.beta.threads.messages.list(
+                    thread_id=st.session_state.thread_id
+                )
+                reply = messages.data[0].content[0].text.value
+
+                st.markdown(reply)
+
+                # Store assistant response
+                st.session_state.messages.append({"role": "assistant", "content": reply})
+
+            except Exception as e:
+                st.error(f"An error occurred: {e}")
