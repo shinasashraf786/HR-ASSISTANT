@@ -6,6 +6,8 @@ import streamlit as st
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 
+# ---------------- CONFIG ----------------
+
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 ASSISTANT_ID = "asst_bBLvW1TIJ2lBYTjCYlfftrhu"
 
@@ -19,41 +21,43 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ---------- WHITE UI + CLEAN CSS ----------
+# ---------------- GLOBAL LIGHT MODE CSS ----------------
+
 st.markdown("""
 <style>
-/* Hide Streamlit header and footer */
 header, footer {
     visibility: hidden;
     height: 0;
 }
 
-/* Body styling */
-html, body, [class*="css"] {
-    background-color: #ffffff !important;
-    color: #1e293b !important;
+/* Remove any default layout padding */
+.block-container {
+    padding-top: 1rem !important;
+    padding-left: 2rem !important;
+    padding-right: 2rem !important;
+    max-width: 100% !important;
 }
 
-/* Sidebar */
+/* Sidebar adjustments */
 [data-testid="stSidebar"] {
     background-color: #f8fafc !important;
     border-right: 1px solid #e2e8f0 !important;
 }
 [data-testid="stSidebar"] * {
-    color: #1e293b !important;
+    color: #0f172a !important;
 }
 
-/* Inputs */
+/* Input, textarea, select */
 input, textarea, select {
     background-color: #ffffff !important;
     color: #0f172a !important;
     border: 1px solid #cbd5e1 !important;
 }
 
-/* Buttons */
+/* Buttons styling */
 button {
     background-color: #ffffff !important;
-    color: #1e293b !important;
+    color: #0f172a !important;
     border: 1px solid #cbd5e1 !important;
     border-radius: 6px !important;
 }
@@ -67,23 +71,31 @@ button:hover {
     background: transparent !important;
 }
 
-/* Chat input */
-[data-testid="stChatInput"] {
-    background-color: #ffffff !important;
-    border-top: 1px solid #e2e8f0 !important;
-    padding-bottom: 8px;
-}
-
-/* Remove box around ❌ ⬇️ */
+/* Remove background box around ❌ ⬇️ icons */
 [data-testid="stChatMessageAction"] {
-    background: transparent !important;
+    background: none !important;
     border: none !important;
     box-shadow: none !important;
+}
+
+/* Chat input bar fix */
+[data-testid="stChatInput"] {
+    position: sticky;
+    bottom: 0;
+    background: #f8fafc !important;
+    border-top: 1px solid #e2e8f0 !important;
+    padding-bottom: 10px;
+}
+
+/* Fix overlap for main title */
+h1 {
+    margin-top: 20px !important;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# ---------- Data helpers ----------
+# ---------------- STORAGE HELPERS ----------------
+
 def load_conversations():
     if os.path.exists(STORAGE_FILE):
         with open(STORAGE_FILE, "r") as f:
@@ -109,15 +121,19 @@ def export_chat_to_pdf(cid, convo):
     doc.build(content)
     return filename
 
-# ---------- Init session ----------
+# ---------------- INIT STATE ----------------
+
 if "conversations" not in st.session_state:
     st.session_state["conversations"] = load_conversations()
+
 if "active_convo" not in st.session_state:
     st.session_state["active_convo"] = None
+
 if "threads" not in st.session_state:
     st.session_state["threads"] = {}
 
-# ---------- Sidebar ----------
+# ---------------- SIDEBAR ----------------
+
 def get_folders():
     return sorted(set(c.get("folder", "Uncategorised")
                       for c in st.session_state["conversations"].values()))
@@ -130,9 +146,9 @@ with st.sidebar:
     selected_folder = st.selectbox("Select folder", folders + ["+ New Folder"])
 
     if selected_folder == "+ New Folder":
-        new_folder_input = st.text_input("Create new folder")
-        if new_folder_input:
-            selected_folder = new_folder_input
+        new_folder = st.text_input("Create new folder")
+        if new_folder:
+            selected_folder = new_folder
 
     st.divider()
     st.header("Chats")
@@ -154,7 +170,7 @@ with st.sidebar:
     for cid, convo in st.session_state["conversations"].items():
         if convo.get("folder") == selected_folder and chat_search.lower() in convo["title"].lower():
             col1, col2, col3 = st.columns([6, 1, 1])
-            if col1.button(convo["title"], key=f"open_{cid}"):
+            if col1.button(convo["title"], key=cid):
                 st.session_state["active_convo"] = cid
                 st.rerun()
             if col2.button("❌", key=f"del_{cid}"):
@@ -165,11 +181,13 @@ with st.sidebar:
                 save_conversations(st.session_state["conversations"])
                 st.rerun()
             with open(export_chat_to_pdf(cid, convo), "rb") as f:
-                col3.download_button("⬇️", data=f, file_name=f"{convo['title']}.pdf", mime="application/pdf", key=f"pdf_{cid}")
+                col3.download_button("⬇️", f, file_name=f"{convo['title']}.pdf", mime="application/pdf", key=f"pdf_{cid}")
 
     if st.button("🗑️ Delete Folder"):
-        to_delete = [cid for cid, c in st.session_state["conversations"].items()
-                     if c.get("folder") == selected_folder]
+        to_delete = [
+            cid for cid, c in st.session_state["conversations"].items()
+            if c.get("folder") == selected_folder
+        ]
         for cid in to_delete:
             st.session_state["conversations"].pop(cid, None)
             st.session_state["threads"].pop(cid, None)
@@ -177,7 +195,8 @@ with st.sidebar:
         save_conversations(st.session_state["conversations"])
         st.rerun()
 
-# ---------- Main Chat Area ----------
+# ---------------- MAIN AREA ----------------
+
 if st.session_state["active_convo"] is None:
     st.markdown("""
     <div style="padding:48px 64px;">
@@ -208,10 +227,12 @@ with st.expander("⚙️ Chat Settings"):
         save_conversations(st.session_state["conversations"])
         st.rerun()
 
+# Chat messages
 for msg in convo["messages"]:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
+# Chat input
 if prompt := st.chat_input("Ask Elevare HR anything..."):
     convo["messages"].append({"role": "user", "content": prompt})
     save_conversations(st.session_state["conversations"])
@@ -219,17 +240,31 @@ if prompt := st.chat_input("Ask Elevare HR anything..."):
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    client.beta.threads.messages.create(thread_id=thread_id, role="user", content=prompt)
+    client.beta.threads.messages.create(
+        thread_id=thread_id,
+        role="user",
+        content=prompt
+    )
 
     with st.chat_message("assistant"):
         with st.spinner("HR Shortlister is thinking..."):
-            run = client.beta.threads.runs.create(thread_id=thread_id, assistant_id=ASSISTANT_ID)
+            run = client.beta.threads.runs.create(
+                thread_id=thread_id,
+                assistant_id=ASSISTANT_ID
+            )
             while True:
-                status = client.beta.threads.runs.retrieve(thread_id=thread_id, run_id=run.id)
+                status = client.beta.threads.runs.retrieve(
+                    thread_id=thread_id,
+                    run_id=run.id
+                )
                 if status.status == "completed":
                     break
                 time.sleep(1)
-            reply = client.beta.threads.messages.list(thread_id=thread_id).data[0].content[0].text.value
+
+            reply = client.beta.threads.messages.list(
+                thread_id=thread_id
+            ).data[0].content[0].text.value
+
             st.markdown(reply)
             convo["messages"].append({"role": "assistant", "content": reply})
             save_conversations(st.session_state["conversations"])
