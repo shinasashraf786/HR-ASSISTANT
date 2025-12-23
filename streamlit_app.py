@@ -1,5 +1,5 @@
 # Copyright 2025
-# ELEVARE HR – INNOVA-STYLE INTERFACE
+# ELEVARE HR – Fully Dark INNOVA-Style UI
 
 import os
 import time
@@ -19,37 +19,46 @@ st.set_page_config(
 )
 
 # -------------------------------------------------
-# GLOBAL CSS – EXACT INNOVA LOOK
+# GLOBAL CSS – FORCE FULL DARK MODE
 # -------------------------------------------------
 
 st.markdown("""
 <style>
 
-/* Remove all Streamlit spacing */
+/* Force dark everywhere */
+html, body, [class*="css"] {
+    background-color: #020617 !important;
+    color: #e5e7eb !important;
+}
+
+/* Remove Streamlit padding */
 .block-container {
     padding: 0 !important;
     margin: 0 !important;
     max-width: 100% !important;
 }
 
-/* App background – pure dark, no white */
+/* App container */
 [data-testid="stAppViewContainer"] {
-    background: linear-gradient(180deg, #020617 0%, #020617 100%);
+    background-color: #020617 !important;
 }
 
-/* Top header removal */
-header { visibility: hidden; height: 0px; }
+/* Hide Streamlit header/footer */
+header, footer {
+    visibility: hidden;
+    height: 0px;
+}
 
 /* Sidebar */
 [data-testid="stSidebar"] {
-    background: #020617;
+    background-color: #020617 !important;
     border-right: 1px solid #0f172a;
     width: 280px;
 }
 
 /* Sidebar text */
 [data-testid="stSidebar"] * {
-    color: #e5e7eb;
+    color: #e5e7eb !important;
 }
 
 /* Inputs */
@@ -73,7 +82,7 @@ button:hover {
 
 /* Main canvas */
 .main {
-    background: linear-gradient(180deg, #020617 0%, #020617 100%);
+    background-color: #020617 !important;
     min-height: 100vh;
 }
 
@@ -82,23 +91,21 @@ button:hover {
     background: transparent !important;
 }
 
-/* Chat input fixed bottom like INNOVA */
+/* Chat input fixed bottom */
 [data-testid="stChatInput"] {
     position: fixed;
-    bottom: 24px;
+    bottom: 20px;
     left: 320px;
     right: 320px;
-    background: transparent;
+    background-color: #020617 !important;
+    border-top: 1px solid #1e293b;
 }
-
-/* Hide Streamlit footer */
-footer { visibility: hidden; }
 
 </style>
 """, unsafe_allow_html=True)
 
 # -------------------------------------------------
-# SIDEBAR – MATCH INNOVA STRUCTURE
+# SIDEBAR – SAME STRUCTURE AS INNOVA
 # -------------------------------------------------
 
 with st.sidebar:
@@ -115,7 +122,7 @@ with st.sidebar:
     st.button("Delete Folder")
 
 # -------------------------------------------------
-# MAIN HERO – POSITION & SPACING MATCHED
+# MAIN HERO – TEXT UNCHANGED
 # -------------------------------------------------
 
 st.markdown("""
@@ -152,7 +159,9 @@ for msg in st.session_state.messages:
 # -------------------------------------------------
 
 if prompt := st.chat_input("Ask Elevare HR anything..."):
-    st.session_state.messages.append({"role": "user", "content": prompt})
+    st.session_state.messages.append(
+        {"role": "user", "content": prompt}
+    )
 
     with st.chat_message("user"):
         st.markdown(prompt)
