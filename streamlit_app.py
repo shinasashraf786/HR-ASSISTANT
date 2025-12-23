@@ -1,5 +1,5 @@
 # Copyright 2025
-# HR Shortlister Streamlit Chat Application
+# ELEVARE HR – INNOVA-STYLE INTERFACE
 
 import os
 import time
@@ -7,7 +7,7 @@ from openai import OpenAI
 import streamlit as st
 
 # -------------------------------------------------
-# Config
+# CONFIG
 # -------------------------------------------------
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -19,39 +19,41 @@ st.set_page_config(
 )
 
 # -------------------------------------------------
-# GLOBAL CSS – MATCH INNOVA UI
+# GLOBAL CSS – EXACT INNOVA LOOK
 # -------------------------------------------------
 
 st.markdown("""
 <style>
 
-/* Remove Streamlit padding */
+/* Remove all Streamlit spacing */
 .block-container {
     padding: 0 !important;
+    margin: 0 !important;
     max-width: 100% !important;
 }
 
-/* App background */
+/* App background – pure dark, no white */
 [data-testid="stAppViewContainer"] {
-    background: radial-gradient(circle at top, #0f172a 0%, #020617 70%);
+    background: linear-gradient(180deg, #020617 0%, #020617 100%);
 }
+
+/* Top header removal */
+header { visibility: hidden; height: 0px; }
 
 /* Sidebar */
 [data-testid="stSidebar"] {
     background: #020617;
     border-right: 1px solid #0f172a;
+    width: 280px;
 }
 
 /* Sidebar text */
-[data-testid="stSidebar"] h1,
-[data-testid="stSidebar"] h2,
-[data-testid="stSidebar"] p,
-[data-testid="stSidebar"] label {
+[data-testid="stSidebar"] * {
     color: #e5e7eb;
 }
 
 /* Inputs */
-input, textarea {
+input, textarea, select {
     background-color: #020617 !important;
     color: #e5e7eb !important;
     border: 1px solid #1e293b !important;
@@ -65,29 +67,38 @@ button {
     border-radius: 6px !important;
 }
 button:hover {
-    border-color: #6366f1 !important;
-    color: #6366f1 !important;
+    border-color: #2563eb !important;
+    color: #2563eb !important;
 }
 
-/* Chat bubbles */
+/* Main canvas */
+.main {
+    background: linear-gradient(180deg, #020617 0%, #020617 100%);
+    min-height: 100vh;
+}
+
+/* Chat bubbles transparent */
 [data-testid="stChatMessage"] {
     background: transparent !important;
 }
 
-/* Chat input bar */
+/* Chat input fixed bottom like INNOVA */
 [data-testid="stChatInput"] {
     position: fixed;
     bottom: 24px;
-    left: 22%;
-    width: 56%;
+    left: 320px;
+    right: 320px;
     background: transparent;
 }
+
+/* Hide Streamlit footer */
+footer { visibility: hidden; }
 
 </style>
 """, unsafe_allow_html=True)
 
 # -------------------------------------------------
-# SIDEBAR (same structure as INNOVA)
+# SIDEBAR – MATCH INNOVA STRUCTURE
 # -------------------------------------------------
 
 with st.sidebar:
@@ -104,16 +115,18 @@ with st.sidebar:
     st.button("Delete Folder")
 
 # -------------------------------------------------
-# MAIN HERO SECTION (UNCHANGED TEXT)
+# MAIN HERO – POSITION & SPACING MATCHED
 # -------------------------------------------------
 
 st.markdown("""
-<div style="padding:60px 80px 20px 80px;">
-    <h1 style="margin-bottom:8px;">ELEVARE HR 👨‍💻</h1>
-    <p style="color:#9ca3af; margin-bottom:4px;">
+<div style="padding:48px 64px 24px 64px;">
+    <h1 style="font-size:28px; font-weight:600; margin-bottom:8px;">
+        ELEVARE HR 👨‍💻
+    </h1>
+    <p style="color:#9ca3af; font-size:14px; margin-bottom:4px;">
         Hire smart, not hard — your AI mate for shortlisting
     </p>
-    <p style="color:#6b7280;">
+    <p style="color:#6b7280; font-size:13px;">
         Handle candidate shortlisting in one place, without the clutter.
     </p>
 </div>
@@ -130,7 +143,6 @@ if "thread_id" not in st.session_state:
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Display chat
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
