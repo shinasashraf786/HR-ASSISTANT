@@ -1,5 +1,5 @@
 # Copyright 2025
-# ELEVARE HR – Fully Dark INNOVA-Style UI
+# ELEVARE HR – Fully White UI
 
 import os
 import time
@@ -19,16 +19,16 @@ st.set_page_config(
 )
 
 # -------------------------------------------------
-# GLOBAL CSS – FORCE FULL DARK MODE
+# GLOBAL CSS – FORCE FULL WHITE MODE
 # -------------------------------------------------
 
 st.markdown("""
 <style>
 
-/* Force dark everywhere */
+/* Force white everywhere */
 html, body, [class*="css"] {
-    background-color: #020617 !important;
-    color: #e5e7eb !important;
+    background-color: #ffffff !important;
+    color: #111827 !important;
 }
 
 /* Remove Streamlit padding */
@@ -40,7 +40,7 @@ html, body, [class*="css"] {
 
 /* App container */
 [data-testid="stAppViewContainer"] {
-    background-color: #020617 !important;
+    background-color: #ffffff !important;
 }
 
 /* Hide Streamlit header/footer */
@@ -51,28 +51,28 @@ header, footer {
 
 /* Sidebar */
 [data-testid="stSidebar"] {
-    background-color: #020617 !important;
-    border-right: 1px solid #0f172a;
+    background-color: #ffffff !important;
+    border-right: 1px solid #e5e7eb;
     width: 280px;
 }
 
 /* Sidebar text */
 [data-testid="stSidebar"] * {
-    color: #e5e7eb !important;
+    color: #111827 !important;
 }
 
 /* Inputs */
 input, textarea, select {
-    background-color: #020617 !important;
-    color: #e5e7eb !important;
-    border: 1px solid #1e293b !important;
+    background-color: #ffffff !important;
+    color: #111827 !important;
+    border: 1px solid #d1d5db !important;
 }
 
 /* Buttons */
 button {
-    background-color: #020617 !important;
-    color: #e5e7eb !important;
-    border: 1px solid #1e293b !important;
+    background-color: #ffffff !important;
+    color: #111827 !important;
+    border: 1px solid #d1d5db !important;
     border-radius: 6px !important;
 }
 button:hover {
@@ -82,7 +82,7 @@ button:hover {
 
 /* Main canvas */
 .main {
-    background-color: #020617 !important;
+    background-color: #ffffff !important;
     min-height: 100vh;
 }
 
@@ -97,15 +97,15 @@ button:hover {
     bottom: 20px;
     left: 320px;
     right: 320px;
-    background-color: #020617 !important;
-    border-top: 1px solid #1e293b;
+    background-color: #ffffff !important;
+    border-top: 1px solid #e5e7eb;
 }
 
 </style>
 """, unsafe_allow_html=True)
 
 # -------------------------------------------------
-# SIDEBAR – SAME STRUCTURE AS INNOVA
+# SIDEBAR
 # -------------------------------------------------
 
 with st.sidebar:
@@ -130,10 +130,10 @@ st.markdown("""
     <h1 style="font-size:28px; font-weight:600; margin-bottom:8px;">
         ELEVARE HR 👨‍💻
     </h1>
-    <p style="color:#9ca3af; font-size:14px; margin-bottom:4px;">
+    <p style="color:#6b7280; font-size:14px; margin-bottom:4px;">
         Hire smart, not hard — your AI mate for shortlisting
     </p>
-    <p style="color:#6b7280; font-size:13px;">
+    <p style="color:#9ca3af; font-size:13px;">
         Handle candidate shortlisting in one place, without the clutter.
     </p>
 </div>
