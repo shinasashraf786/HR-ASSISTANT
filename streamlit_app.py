@@ -1,5 +1,5 @@
 # Copyright 2025
-# ELEVARE HR – Fully White UI
+# ELEVARE HR – Stable White UI (Sidebar + Layout Fixed)
 
 import os
 import time
@@ -19,41 +19,50 @@ st.set_page_config(
 )
 
 # -------------------------------------------------
-# GLOBAL CSS – FORCE FULL WHITE MODE
+# GLOBAL CSS – CLEAN WHITE, NO BREAKAGE
 # -------------------------------------------------
 
 st.markdown("""
 <style>
 
-/* Force white everywhere */
+/* Prevent horizontal scroll everywhere */
+html, body {
+    overflow-x: hidden;
+}
+
+/* Force white theme */
 html, body, [class*="css"] {
     background-color: #ffffff !important;
     color: #111827 !important;
 }
 
-/* Remove Streamlit padding */
+/* Main container */
 .block-container {
     padding: 0 !important;
     margin: 0 !important;
     max-width: 100% !important;
 }
 
-/* App container */
+/* App canvas */
 [data-testid="stAppViewContainer"] {
     background-color: #ffffff !important;
 }
 
-/* Hide Streamlit header/footer */
-header, footer {
+/* IMPORTANT: Do NOT hide header (keeps sidebar toggle working) */
+header {
+    background: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+/* Footer hidden safely */
+footer {
     visibility: hidden;
-    height: 0px;
 }
 
 /* Sidebar */
 [data-testid="stSidebar"] {
     background-color: #ffffff !important;
     border-right: 1px solid #e5e7eb;
-    width: 280px;
 }
 
 /* Sidebar text */
@@ -80,25 +89,23 @@ button:hover {
     color: #2563eb !important;
 }
 
-/* Main canvas */
-.main {
-    background-color: #ffffff !important;
-    min-height: 100vh;
-}
-
-/* Chat bubbles transparent */
+/* Chat bubbles */
 [data-testid="stChatMessage"] {
     background: transparent !important;
 }
 
-/* Chat input fixed bottom */
+/* Chat input – NO fixed width, NO vertical bar */
 [data-testid="stChatInput"] {
-    position: fixed;
-    bottom: 20px;
-    left: 320px;
-    right: 320px;
+    position: sticky;
+    bottom: 0;
     background-color: #ffffff !important;
     border-top: 1px solid #e5e7eb;
+    padding-bottom: 8px;
+}
+
+/* Kill any rogue borders */
+* {
+    box-shadow: none !important;
 }
 
 </style>
@@ -110,24 +117,25 @@ button:hover {
 
 with st.sidebar:
     st.markdown("### Folders")
-    st.text_input("", placeholder="Search folders")
+    st.text_input("Search folders")
+
     st.selectbox("", ["+ New Folder"])
 
     st.divider()
 
     st.markdown("### Chats")
-    st.text_input("", placeholder="Search chats")
+    st.text_input("Search chats")
 
     st.button("New Chat")
     st.button("Delete Folder")
 
 # -------------------------------------------------
-# MAIN HERO – TEXT UNCHANGED
+# MAIN HERO (UNCHANGED TEXT)
 # -------------------------------------------------
 
 st.markdown("""
-<div style="padding:48px 64px 24px 64px;">
-    <h1 style="font-size:28px; font-weight:600; margin-bottom:8px;">
+<div style="padding:32px 48px 16px 48px;">
+    <h1 style="font-size:28px; font-weight:600; margin-bottom:6px;">
         ELEVARE HR 👨‍💻
     </h1>
     <p style="color:#6b7280; font-size:14px; margin-bottom:4px;">
