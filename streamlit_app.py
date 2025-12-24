@@ -1,82 +1,125 @@
 import os
 import time
-import streamlit as st
+import json
 from openai import OpenAI
+import streamlit as st
 
-# -------------------------------
-# Config
-# -------------------------------
+# Configure OpenAI client
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+# Constants
 ASSISTANT_ID = "asst_bBLvW1TIJ2lBYTjCYlfftrhu"
+DATA_FILE = "conversations.json"
 
-st.set_page_config(
-    page_title="INNOVA DATA INTEGRATION AND EMAIL CATEGORISATION",
-    layout="wide"
-)
+# -------------------------------------------
+# Utility Functions
+# -------------------------------------------
 
-# -------------------------------
-# Styling (Dark Sidebar, Light Content)
-# -------------------------------
+def load_data():
+    if not os.path.exists(DATA_FILE):
+        return {"folders": {}, "current_folder": None}
+    with open(DATA_FILE, "r") as f:
+        return json.load(f)
+
+def save_data(data):
+    with open(DATA_FILE, "w") as f:
+        json.dump(data, f, indent=2)
+
+def save_chat_to_folder(data, folder, chat):
+    if folder not in data["folders"]:
+        data["folders"][folder] = []
+    data["folders"][folder].append(chat)
+    save_data(data)
+
+def delete_folder(data, folder):
+    if folder in data["folders"] and not data["folders"][folder]:
+        del data["folders"][folder]
+        if data["current_folder"] == folder:
+            data["current_folder"] = None
+        save_data(data)
+        return True
+    return False
+
+# -------------------------------------------
+# Page Configuration
+# -------------------------------------------
+
+st.set_page_config(page_title="HR Shortlister", page_icon="🤖")
+st.title("ELEVARE HR 👨‍💻")
+st.caption("Hire smart, not hard — your AI mate for shortlisting")
+
 st.markdown("""
-<style>
-    /* Sidebar background */
-    .st-emotion-cache-1v0mbdj, .st-emotion-cache-6qob1r {
-        background-color: #111;
-        color: white;
-    }
+With ELEVARE HR, you can:
+- Cut through the pile and find top candidates fast.
+- Build sharp shortlists that hit the mark.
+- Get hiring insights that actually help.
+""")
 
-    /* Sidebar input + dropdown text */
-    .stTextInput > div > div > input,
-    .stSelectbox > div > div > div > input {
-        background-color: #222 !important;
-        color: white !important;
-    }
+# -------------------------------------------
+# Load Session and Data
+# -------------------------------------------
 
-    /* Buttons */
-    .stButton>button {
-        background-color: #444;
-        color: white;
-        border: none;
-        padding: 0.4rem 1rem;
-        border-radius: 6px;
-    }
-    .stButton>button:hover {
-        background-color: #666;
-    }
+if "data" not in st.session_state:
+    st.session_state.data = load_data()
 
-    /* Main header */
-    .block-container {
-        padding: 2rem;
-    }
-</style>
-""", unsafe_allow_html=True)
+data = st.session_state.data
+folders = list(data["folders"].keys())
+selected_folder = data.get("current_folder")
 
-# -------------------------------
-# Sidebar (Folders & Chats)
-# -------------------------------
-st.sidebar.title("Folders")
-st.sidebar.text_input("Search folders")
-st.sidebar.selectbox("Select folder", options=["+ New Folder"])
-st.sidebar.text_input("Create new folder")
+# -------------------------------------------
+# Sidebar: Folders and Chats
+# -------------------------------------------
 
-st.sidebar.markdown("---")
+st.subheader("Folders")
 
-st.sidebar.title("Chats")
-st.sidebar.text_input("Search chats")
-st.sidebar.button("New Chat")
-st.sidebar.button("Delete Folder")
+search_folder = st.text_input("Search folders")
 
-# -------------------------------
-# Header
-# -------------------------------
-st.markdown("""
-<h1 style='color:white;'>INNOVA DATA INTEGRATION AND EMAIL CATEGORISATION 🔁</h1>
-<p style='color:grey;'>Handle INNOVA data and email categories in one place, without the clutter</p>
-""", unsafe_allow_html=True)
+filtered_folders = [f for f in folders if search_folder.lower() in f.lower()]
+selected = st.selectbox("Select folder", ["+ New Folder"] + filtered_folders)
 
-# -------------------------------
-# Initialise Session State
-# -------------------------------
+if selected and selected != "+ New Folder":
+    data["current_folder"] = selected
+    save_data(data)
+
+new_folder = st.text_input("Create new folder")
+if new_folder and st.button("Create Folder"):
+    if new_folder not in data["folders"]:
+        data["folders"][new_folder] = []
+        data["current_folder"] = new_folder
+        save_data(data)
+        st.experimental_rerun()
+
+# -------------------------------------------
+# Chat Management
+# -------------------------------------------
+
+st.subheader("Chats")
+chat_search = st.text_input("Search chats")
+
+if selected_folder := data.get("current_folder"):
+    chats = data["folders"].get(selected_folder, [])
+    filtered_chats = [c for c in chats if chat_search.lower() in c["user"].lower()]
+else:
+    chats = []
+    filtered_chats = []
+
+if st.button("New Chat"):
+    st.session_state.messages = []
+    st.session_state.thread_id = client.beta.threads.create().id
+
+if st.button("🗑 Delete Folder", key="delete"):
+    if selected_folder:
+        success = delete_folder(data, selected_folder)
+        if success:
+            st.success("Folder deleted.")
+            st.experimental_rerun()
+        else:
+            st.warning("Folder not empty.")
+
+# -------------------------------------------
+# Chat Display
+# -------------------------------------------
+
 if "thread_id" not in st.session_state:
     thread = client.beta.threads.create()
     st.session_state.thread_id = thread.id
@@ -84,39 +127,34 @@ if "thread_id" not in st.session_state:
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# -------------------------------
-# Show Previous Messages
-# -------------------------------
+# Display prior messages
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-# -------------------------------
-# Chat Input
-# -------------------------------
-if prompt := st.chat_input("Ask anything about INNOVA data..."):
-    # Show user input
+# -------------------------------------------
+# User Input and Assistant Response
+# -------------------------------------------
+
+if prompt := st.chat_input("Ask HR Shortlister anything..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # Send message to thread
     client.beta.threads.messages.create(
         thread_id=st.session_state.thread_id,
         role="user",
         content=prompt
     )
 
-    # Run assistant + stream reply
     with st.chat_message("assistant"):
-        with st.spinner("Thinking..."):
+        with st.spinner("HR Shortlister is thinking..."):
             try:
                 run = client.beta.threads.runs.create(
                     thread_id=st.session_state.thread_id,
                     assistant_id=ASSISTANT_ID
                 )
 
-                # Wait until complete
                 while True:
                     status = client.beta.threads.runs.retrieve(
                         thread_id=st.session_state.thread_id,
@@ -126,14 +164,20 @@ if prompt := st.chat_input("Ask anything about INNOVA data..."):
                         break
                     time.sleep(1)
 
-                # Get last assistant message
                 messages = client.beta.threads.messages.list(
                     thread_id=st.session_state.thread_id
                 )
                 reply = messages.data[0].content[0].text.value
-
                 st.markdown(reply)
+
                 st.session_state.messages.append({"role": "assistant", "content": reply})
+
+                if selected_folder:
+                    save_chat_to_folder(
+                        data,
+                        selected_folder,
+                        {"user": prompt, "assistant": reply}
+                    )
 
             except Exception as e:
                 st.error(f"An error occurred: {e}")
