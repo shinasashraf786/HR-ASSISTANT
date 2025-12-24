@@ -7,13 +7,12 @@ import streamlit as st
 # Configure OpenAI client
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-# Constants
 ASSISTANT_ID = "asst_bBLvW1TIJ2lBYTjCYlfftrhu"
 DATA_FILE = "conversations.json"
 
-# -------------------------------------------
-# Utility Functions
-# -------------------------------------------
+# ----------------------
+# Utilities
+# ----------------------
 
 def load_data():
     if not os.path.exists(DATA_FILE):
@@ -40,11 +39,86 @@ def delete_folder(data, folder):
         return True
     return False
 
-# -------------------------------------------
-# Page Configuration
-# -------------------------------------------
+# ----------------------
+# Streamlit Config
+# ----------------------
 
 st.set_page_config(page_title="HR Shortlister", page_icon="🤖")
+
+# ----------------------
+# Session Setup
+# ----------------------
+
+if "data" not in st.session_state:
+    st.session_state.data = load_data()
+
+if "thread_id" not in st.session_state:
+    thread = client.beta.threads.create()
+    st.session_state.thread_id = thread.id
+
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+data = st.session_state.data
+folders = list(data["folders"].keys())
+selected_folder = data.get("current_folder")
+
+# ----------------------
+# Sidebar UI (Folder + Chat)
+# ----------------------
+
+with st.sidebar:
+    st.subheader("Folders")
+
+    folder_search = st.text_input("Search folders")
+    filtered_folders = [f for f in folders if folder_search.lower() in f.lower()]
+    folder_selection = st.selectbox("Select folder", ["+ New Folder"] + filtered_folders)
+
+    if folder_selection and folder_selection != "+ New Folder":
+        data["current_folder"] = folder_selection
+        save_data(data)
+
+    new_folder = st.text_input("Create new folder")
+    if new_folder and st.button("Create Folder"):
+        if new_folder not in data["folders"]:
+            data["folders"][new_folder] = []
+            data["current_folder"] = new_folder
+            save_data(data)
+            st.experimental_rerun()
+
+    st.divider()
+    st.subheader("Chats")
+
+    chat_search = st.text_input("Search chats")
+
+    if selected_folder := data.get("current_folder"):
+        chats = data["folders"].get(selected_folder, [])
+        filtered_chats = [c for c in chats if chat_search.lower() in c["user"].lower()]
+    else:
+        chats = []
+        filtered_chats = []
+
+    if st.button("New Chat"):
+        st.session_state.messages = []
+        st.session_state.thread_id = client.beta.threads.create().id
+
+    if st.button("🗑 Delete Folder"):
+        if selected_folder:
+            success = delete_folder(data, selected_folder)
+            if success:
+                st.success("Folder deleted.")
+                st.experimental_rerun()
+            else:
+                st.warning("Folder not empty.")
+
+    if filtered_chats:
+        for chat in filtered_chats:
+            st.markdown(f"🔴 **{chat['user']}**\n\n🟠 {chat['assistant']}")
+
+# ----------------------
+# Main Page: Chat Assistant
+# ----------------------
+
 st.title("ELEVARE HR 👨‍💻")
 st.caption("Hire smart, not hard — your AI mate for shortlisting")
 
@@ -55,87 +129,12 @@ With ELEVARE HR, you can:
 - Get hiring insights that actually help.
 """)
 
-# -------------------------------------------
-# Load Session and Data
-# -------------------------------------------
-
-if "data" not in st.session_state:
-    st.session_state.data = load_data()
-
-data = st.session_state.data
-folders = list(data["folders"].keys())
-selected_folder = data.get("current_folder")
-
-# -------------------------------------------
-# Sidebar: Folders and Chats
-# -------------------------------------------
-
-st.subheader("Folders")
-
-search_folder = st.text_input("Search folders")
-
-filtered_folders = [f for f in folders if search_folder.lower() in f.lower()]
-selected = st.selectbox("Select folder", ["+ New Folder"] + filtered_folders)
-
-if selected and selected != "+ New Folder":
-    data["current_folder"] = selected
-    save_data(data)
-
-new_folder = st.text_input("Create new folder")
-if new_folder and st.button("Create Folder"):
-    if new_folder not in data["folders"]:
-        data["folders"][new_folder] = []
-        data["current_folder"] = new_folder
-        save_data(data)
-        st.experimental_rerun()
-
-# -------------------------------------------
-# Chat Management
-# -------------------------------------------
-
-st.subheader("Chats")
-chat_search = st.text_input("Search chats")
-
-if selected_folder := data.get("current_folder"):
-    chats = data["folders"].get(selected_folder, [])
-    filtered_chats = [c for c in chats if chat_search.lower() in c["user"].lower()]
-else:
-    chats = []
-    filtered_chats = []
-
-if st.button("New Chat"):
-    st.session_state.messages = []
-    st.session_state.thread_id = client.beta.threads.create().id
-
-if st.button("🗑 Delete Folder", key="delete"):
-    if selected_folder:
-        success = delete_folder(data, selected_folder)
-        if success:
-            st.success("Folder deleted.")
-            st.experimental_rerun()
-        else:
-            st.warning("Folder not empty.")
-
-# -------------------------------------------
-# Chat Display
-# -------------------------------------------
-
-if "thread_id" not in st.session_state:
-    thread = client.beta.threads.create()
-    st.session_state.thread_id = thread.id
-
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-
 # Display prior messages
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-# -------------------------------------------
-# User Input and Assistant Response
-# -------------------------------------------
-
+# Input and response
 if prompt := st.chat_input("Ask HR Shortlister anything..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
