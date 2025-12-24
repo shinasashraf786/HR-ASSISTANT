@@ -1,76 +1,82 @@
 import os
 import time
-from openai import OpenAI
 import streamlit as st
-from streamlit_extras.switch_page_button import switch_page
+from openai import OpenAI
 
-# -------------------------------------------------
-# Environment Setup
-# -------------------------------------------------
+# -------------------------------
+# Config
+# -------------------------------
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 ASSISTANT_ID = "asst_bBLvW1TIJ2lBYTjCYlfftrhu"
 
-# -------------------------------------------------
-# Streamlit Page Config
-# -------------------------------------------------
 st.set_page_config(
     page_title="INNOVA DATA INTEGRATION AND EMAIL CATEGORISATION",
-    page_icon="♾",
     layout="wide"
 )
 
-# -------------------------------------------------
-# CSS Styling for Light Text and Sidebar
-# -------------------------------------------------
+# -------------------------------
+# Styling (Dark Sidebar, Light Content)
+# -------------------------------
 st.markdown("""
-    <style>
-        .block-container {
-            padding: 0 2rem;
-        }
-        .css-1d391kg {  
-            background-color: #111;
-        }
-        .stTextInput>div>div>input {
-            color: white;
-        }
-        .stTextInput>div>div {
-            background-color: #222;
-        }
-        .stButton>button {
-            background-color: #444;
-            color: white;
-        }
-        .stButton>button:hover {
-            background-color: #666;
-        }
-    </style>
+<style>
+    /* Sidebar background */
+    .st-emotion-cache-1v0mbdj, .st-emotion-cache-6qob1r {
+        background-color: #111;
+        color: white;
+    }
+
+    /* Sidebar input + dropdown text */
+    .stTextInput > div > div > input,
+    .stSelectbox > div > div > div > input {
+        background-color: #222 !important;
+        color: white !important;
+    }
+
+    /* Buttons */
+    .stButton>button {
+        background-color: #444;
+        color: white;
+        border: none;
+        padding: 0.4rem 1rem;
+        border-radius: 6px;
+    }
+    .stButton>button:hover {
+        background-color: #666;
+    }
+
+    /* Main header */
+    .block-container {
+        padding: 2rem;
+    }
+</style>
 """, unsafe_allow_html=True)
 
-# -------------------------------------------------
-# Sidebar Functionality
-# -------------------------------------------------
+# -------------------------------
+# Sidebar (Folders & Chats)
+# -------------------------------
 st.sidebar.title("Folders")
-folder_search = st.sidebar.text_input("Search folders")
+st.sidebar.text_input("Search folders")
 st.sidebar.selectbox("Select folder", options=["+ New Folder"])
-create_folder = st.sidebar.text_input("Create new folder")
+st.sidebar.text_input("Create new folder")
 
 st.sidebar.markdown("---")
-st.sidebar.title("Chats")
-chat_search = st.sidebar.text_input("Search chats")
-new_chat_btn = st.sidebar.button("New Chat")
-delete_folder_btn = st.sidebar.button("Delete Folder")
 
-# -------------------------------------------------
-# App Header
-# -------------------------------------------------
+st.sidebar.title("Chats")
+st.sidebar.text_input("Search chats")
+st.sidebar.button("New Chat")
+st.sidebar.button("Delete Folder")
+
+# -------------------------------
+# Header
+# -------------------------------
 st.markdown("""
-    <h1 style='color:white;'>INNOVA DATA INTEGRATION AND EMAIL CATEGORISATION ♾</h1>
-    <p style='color:grey;'>Handle INNOVA data and email categories in one place, without the clutter</p>
+<h1 style='color:white;'>INNOVA DATA INTEGRATION AND EMAIL CATEGORISATION 🔁</h1>
+<p style='color:grey;'>Handle INNOVA data and email categories in one place, without the clutter</p>
 """, unsafe_allow_html=True)
 
-# -------------------------------------------------
-# Chat Setup
-# -------------------------------------------------
+# -------------------------------
+# Initialise Session State
+# -------------------------------
 if "thread_id" not in st.session_state:
     thread = client.beta.threads.create()
     st.session_state.thread_id = thread.id
@@ -78,31 +84,39 @@ if "thread_id" not in st.session_state:
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Display message history
+# -------------------------------
+# Show Previous Messages
+# -------------------------------
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-# Chat input
+# -------------------------------
+# Chat Input
+# -------------------------------
 if prompt := st.chat_input("Ask anything about INNOVA data..."):
+    # Show user input
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
+    # Send message to thread
     client.beta.threads.messages.create(
         thread_id=st.session_state.thread_id,
         role="user",
         content=prompt
     )
 
+    # Run assistant + stream reply
     with st.chat_message("assistant"):
-        with st.spinner("Working on it..."):
+        with st.spinner("Thinking..."):
             try:
                 run = client.beta.threads.runs.create(
                     thread_id=st.session_state.thread_id,
                     assistant_id=ASSISTANT_ID
                 )
 
+                # Wait until complete
                 while True:
                     status = client.beta.threads.runs.retrieve(
                         thread_id=st.session_state.thread_id,
@@ -112,6 +126,7 @@ if prompt := st.chat_input("Ask anything about INNOVA data..."):
                         break
                     time.sleep(1)
 
+                # Get last assistant message
                 messages = client.beta.threads.messages.list(
                     thread_id=st.session_state.thread_id
                 )
