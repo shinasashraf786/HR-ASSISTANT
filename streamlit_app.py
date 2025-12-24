@@ -1,46 +1,76 @@
-# Copyright 2025
-# HR Shortlister Streamlit Chat Application
-
 import os
 import time
-#from dotenv import load_dotenv
 from openai import OpenAI
 import streamlit as st
+from streamlit_extras.switch_page_button import switch_page
 
 # -------------------------------------------------
 # Environment Setup
 # -------------------------------------------------
-
-# Load environment variables from .env
-#load_dotenv()
-
-# Configure OpenAI client
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
-# Your Assistant ID
 ASSISTANT_ID = "asst_bBLvW1TIJ2lBYTjCYlfftrhu"
 
+# -------------------------------------------------
 # Streamlit Page Config
-st.set_page_config(page_title="HR Shortlister", page_icon="🤖")
+# -------------------------------------------------
+st.set_page_config(
+    page_title="INNOVA DATA INTEGRATION AND EMAIL CATEGORISATION",
+    page_icon="♾",
+    layout="wide"
+)
+
+# -------------------------------------------------
+# CSS Styling for Light Text and Sidebar
+# -------------------------------------------------
+st.markdown("""
+    <style>
+        .block-container {
+            padding: 0 2rem;
+        }
+        .css-1d391kg {  
+            background-color: #111;
+        }
+        .stTextInput>div>div>input {
+            color: white;
+        }
+        .stTextInput>div>div {
+            background-color: #222;
+        }
+        .stButton>button {
+            background-color: #444;
+            color: white;
+        }
+        .stButton>button:hover {
+            background-color: #666;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
+# -------------------------------------------------
+# Sidebar Functionality
+# -------------------------------------------------
+st.sidebar.title("Folders")
+folder_search = st.sidebar.text_input("Search folders")
+st.sidebar.selectbox("Select folder", options=["+ New Folder"])
+create_folder = st.sidebar.text_input("Create new folder")
+
+st.sidebar.markdown("---")
+st.sidebar.title("Chats")
+chat_search = st.sidebar.text_input("Search chats")
+new_chat_btn = st.sidebar.button("New Chat")
+delete_folder_btn = st.sidebar.button("Delete Folder")
 
 # -------------------------------------------------
 # App Header
 # -------------------------------------------------
-
-st.title("ELEVARE HR 👨‍💻")
-st.caption("Hire smart, not hard — your AI mate for shortlisting")
-
 st.markdown("""
-With ELEVARE HR, you can:
-- Cut through the pile and find top candidates fast.
-- Build sharp shortlists that hit the mark.
-- Get hiring insights that actually help.
-""")
+    <h1 style='color:white;'>INNOVA DATA INTEGRATION AND EMAIL CATEGORISATION ♾</h1>
+    <p style='color:grey;'>Handle INNOVA data and email categories in one place, without the clutter</p>
+""", unsafe_allow_html=True)
 
 # -------------------------------------------------
-# Chat Interface Setup
+# Chat Setup
 # -------------------------------------------------
-
 if "thread_id" not in st.session_state:
     thread = client.beta.threads.create()
     st.session_state.thread_id = thread.id
@@ -48,38 +78,31 @@ if "thread_id" not in st.session_state:
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Display prior messages
+# Display message history
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-# -------------------------------------------------
-# User Input
-# -------------------------------------------------
-
-if prompt := st.chat_input("Ask HR Shortlister anything..."):
-    # Display user message
+# Chat input
+if prompt := st.chat_input("Ask anything about INNOVA data..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # Add user message to thread
     client.beta.threads.messages.create(
         thread_id=st.session_state.thread_id,
         role="user",
         content=prompt
     )
 
-    # Run the assistant
     with st.chat_message("assistant"):
-        with st.spinner("HR Shortlister is thinking..."):
+        with st.spinner("Working on it..."):
             try:
                 run = client.beta.threads.runs.create(
                     thread_id=st.session_state.thread_id,
                     assistant_id=ASSISTANT_ID
                 )
 
-                # Poll until run completes
                 while True:
                     status = client.beta.threads.runs.retrieve(
                         thread_id=st.session_state.thread_id,
@@ -89,15 +112,12 @@ if prompt := st.chat_input("Ask HR Shortlister anything..."):
                         break
                     time.sleep(1)
 
-                # Get assistant reply
                 messages = client.beta.threads.messages.list(
                     thread_id=st.session_state.thread_id
                 )
                 reply = messages.data[0].content[0].text.value
 
                 st.markdown(reply)
-
-                # Store assistant response
                 st.session_state.messages.append({"role": "assistant", "content": reply})
 
             except Exception as e:
