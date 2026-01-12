@@ -59,7 +59,7 @@ def export_folder_to_pdf(folder_name, conversations):
 # Assistant Setup
 # ---------------------------
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-ASSISTANT_ID = "asst_bBLvW1TIJ2lBYTjCYlfftrhu"
+ASSISTANT_ID = "asst_RjF1GGVl9cboZlEINvhNz8KB"
 
 st.set_page_config(page_title="HR Shortlister", page_icon="🤖")
 
